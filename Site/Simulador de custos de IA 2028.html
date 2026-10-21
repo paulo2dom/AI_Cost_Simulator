@@ -1,0 +1,1744 @@
+<!doctype html>
+<html>
+
+<head>
+  <meta charset=utf8>
+  <meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <style>
+    :root {
+      color-scheme: light;
+      box-sizing: border-box;
+      padding-top: env(safe-area-inset-top, 0px);
+      padding-bottom: env(safe-area-inset-bottom, 0px)
+    }
+
+    html {
+      scroll-padding-top: env(safe-area-inset-top, 0px)
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font: 14px -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #fff;
+      color: #000
+    }
+
+    img {
+      max-width: 100%
+    }
+
+    [hidden]:not([hidden=until-found i]) {
+      display: none !important
+    }
+  </style>
+</head>
+
+<body>
+  <title>Simulador de Fatura de IA 2028</title>
+  <meta name="claude:viewport-fit-sides" content="cover">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    /* Layout: painel de controlo fixo à esquerda (como um contador de consumo), leitura à direita: fatura → rupturas → gráficos → tabela mensal */
+    :root {
+      --bg: #f3f4f7;
+      --surface: #ffffff;
+      --surface-2: #eceef3;
+      --ink: #12151c;
+      --ink-2: #4a5061;
+      --muted: #6c7283;
+      --line: #dde0e8;
+      --grid: #e8eaf0;
+      --accent: #33388f;
+      --accent-ink: #ffffff;
+      --accent-soft: #e6e7f6;
+      --s1: #2a78d6;
+      --s2: #eb6834;
+      --s3: #1baf7a;
+      --s4: #eda100;
+      --good: #0ca30c;
+      --warn: #fab219;
+      --serious: #ec835a;
+      --crit: #d03b3b;
+      --good-ink: #0a6e0a;
+      --warn-ink: #8a5d00;
+      --serious-ink: #a5461f;
+      --crit-ink: #b02a2a;
+      --div-neg: #d03b3b;
+      --div-mid: #f0efec;
+      --div-pos: #2a78d6;
+      --f-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+      --f-body: "Archivo", "Helvetica Neue", Arial, sans-serif;
+      --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+      --r: 10px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #111318;
+        --surface: #1a1d24;
+        --surface-2: #232731;
+        --ink: #eef0f5;
+        --ink-2: #c0c5d2;
+        --muted: #9097a8;
+        --line: #2d313c;
+        --grid: #262a34;
+        --accent: #9aa0f0;
+        --accent-ink: #12142e;
+        --accent-soft: #262a4a;
+        --s1: #3987e5;
+        --s2: #d95926;
+        --s3: #199e70;
+        --s4: #c98500;
+        --good-ink: #5fd35f;
+        --warn-ink: #fbc44d;
+        --serious-ink: #f2a080;
+        --crit-ink: #f08080;
+        --div-neg: #e66767;
+        --div-mid: #383835;
+        --div-pos: #3987e5;
+        color-scheme: dark;
+      }
+    }
+
+    :root[data-theme="dark"] {
+      --bg: #111318;
+      --surface: #1a1d24;
+      --surface-2: #232731;
+      --ink: #eef0f5;
+      --ink-2: #c0c5d2;
+      --muted: #9097a8;
+      --line: #2d313c;
+      --grid: #262a34;
+      --accent: #9aa0f0;
+      --accent-ink: #12142e;
+      --accent-soft: #262a4a;
+      --s1: #3987e5;
+      --s2: #d95926;
+      --s3: #199e70;
+      --s4: #c98500;
+      --good-ink: #5fd35f;
+      --warn-ink: #fbc44d;
+      --serious-ink: #f2a080;
+      --crit-ink: #f08080;
+      --div-neg: #e66767;
+      --div-mid: #383835;
+      --div-pos: #3987e5;
+      color-scheme: dark;
+    }
+
+    * {
+      box-sizing: border-box
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: var(--f-body);
+      font-size: 14px;
+      line-height: 1.45;
+      padding-left: max(16px, env(safe-area-inset-left, 0px));
+      padding-right: max(16px, env(safe-area-inset-right, 0px));
+      padding-block: 20px 48px
+    }
+
+    .wrap {
+      max-width: 1480px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 18px
+    }
+
+    h1,
+    h2,
+    h3 {
+      font-family: var(--f-display);
+      text-wrap: balance;
+      margin: 0
+    }
+
+    h1 {
+      font-size: clamp(22px, 2.6vw, 30px);
+      font-weight: 750;
+      font-stretch: 88%;
+      letter-spacing: -.01em
+    }
+
+    h2 {
+      font-size: 17px;
+      font-weight: 700;
+      font-stretch: 92%
+    }
+
+    h3 {
+      font-size: 13px;
+      font-weight: 650;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--muted)
+    }
+
+    .num,
+    .mono {
+      font-family: var(--f-mono);
+      font-variant-numeric: tabular-nums
+    }
+
+    .muted {
+      color: var(--muted)
+    }
+
+    .small {
+      font-size: 12px
+    }
+
+    /* header */
+    .top {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 14px
+    }
+
+    .top p {
+      margin: 4px 0 0;
+      color: var(--ink-2);
+      max-width: 70ch
+    }
+
+    .seg {
+      display: inline-flex;
+      flex-wrap: wrap;
+      background: var(--surface-2);
+      border-radius: 9px;
+      padding: 3px;
+      gap: 2px
+    }
+
+    .seg button {
+      font: inherit;
+      font-size: 13px;
+      border: 0;
+      background: transparent;
+      color: var(--ink-2);
+      padding: 7px 12px;
+      border-radius: 7px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px
+    }
+
+    .seg button .key {
+      width: 14px;
+      height: 3px;
+      border-radius: 2px;
+      display: inline-block
+    }
+
+    .seg button[aria-pressed="true"] {
+      background: var(--surface);
+      color: var(--ink);
+      font-weight: 600;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, .08)
+    }
+
+    .seg button:focus-visible,
+    .btn:focus-visible,
+    summary:focus-visible,
+    input:focus-visible,
+    select:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px
+    }
+
+    .scen-label {
+      display: flex;
+      flex-direction: column;
+      gap: 6px
+    }
+
+    /* grid */
+    .layout {
+      display: grid;
+      grid-template-columns: 350px minmax(0, 1fr);
+      gap: 18px;
+      align-items: start
+    }
+
+    @media (max-width:1020px) {
+      .layout {
+        grid-template-columns: minmax(0, 1fr)
+      }
+    }
+
+    aside.panel {
+      position: sticky;
+      top: max(12px, env(safe-area-inset-top, 0px));
+      max-height: calc(100vh - 24px);
+      overflow: auto;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--r);
+      padding-block: 6px
+    }
+
+    @media (max-width:1020px) {
+      aside.panel {
+        position: static;
+        max-height: none
+      }
+    }
+
+    .panel-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px 8px
+    }
+
+    details.grp {
+      border-top: 1px solid var(--line)
+    }
+
+    details.grp>summary {
+      list-style: none;
+      cursor: pointer;
+      padding: 11px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 650;
+      font-size: 13.5px
+    }
+
+    details.grp>summary::-webkit-details-marker {
+      display: none
+    }
+
+    details.grp>summary::after {
+      content: "+";
+      font-family: var(--f-mono);
+      color: var(--muted)
+    }
+
+    details.grp[open]>summary::after {
+      content: "–"
+    }
+
+    .fields {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 2px 14px 14px
+    }
+
+    .f {
+      display: flex;
+      flex-direction: column;
+      gap: 4px
+    }
+
+    .f-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px
+    }
+
+    .f label {
+      font-size: 12.5px;
+      color: var(--ink-2)
+    }
+
+    .f .unit {
+      font-size: 11px;
+      color: var(--muted);
+      margin-left: 4px
+    }
+
+    .f input[type=number] {
+      width: 92px;
+      font: inherit;
+      font-family: var(--f-mono);
+      font-size: 12.5px;
+      text-align: right;
+      padding: 4px 6px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--bg);
+      color: var(--ink)
+    }
+
+    .f input[type=range] {
+      width: 100%;
+      accent-color: var(--accent);
+      margin: 0
+    }
+
+    .help {
+      font-size: 11.5px;
+      color: var(--muted);
+      margin: 0
+    }
+
+    .tiers {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px
+    }
+
+    .tiers th {
+      font-weight: 500;
+      color: var(--muted);
+      text-align: right;
+      padding: 2px 3px;
+      font-size: 11px
+    }
+
+    .tiers th:first-child,
+    .tiers td:first-child {
+      text-align: left
+    }
+
+    .tiers td {
+      padding: 2px 3px
+    }
+
+    .tiers input {
+      width: 100%;
+      min-width: 0;
+      font: inherit;
+      font-family: var(--f-mono);
+      font-size: 12px;
+      text-align: right;
+      padding: 3px 4px;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      background: var(--bg);
+      color: var(--ink)
+    }
+
+    select {
+      font: inherit;
+      font-size: 12.5px;
+      padding: 5px 6px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--bg);
+      color: var(--ink);
+      max-width: 100%
+    }
+
+    .toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 600
+    }
+
+    .toggle input {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--accent)
+    }
+
+    .btn {
+      font: inherit;
+      font-size: 12.5px;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--ink);
+      padding: 6px 10px;
+      border-radius: 7px;
+      cursor: pointer
+    }
+
+    .btn:hover {
+      background: var(--surface-2)
+    }
+
+    /* main */
+    main {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      min-width: 0
+    }
+
+    .invoice {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--r);
+      display: grid;
+      grid-template-columns: minmax(0, 1.25fr) minmax(0, 2fr);
+      overflow: hidden
+    }
+
+    @media (max-width:760px) {
+      .invoice {
+        grid-template-columns: minmax(0, 1fr)
+      }
+    }
+
+    .inv-hero {
+      padding: 20px 22px;
+      background: var(--accent-soft);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      border-right: 1px solid var(--line)
+    }
+
+    .inv-hero .lbl {
+      font-size: 12px;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: var(--ink-2);
+      font-weight: 600
+    }
+
+    .inv-hero .big {
+      font-family: var(--f-display);
+      font-size: clamp(34px, 4.2vw, 50px);
+      font-weight: 780;
+      font-stretch: 80%;
+      letter-spacing: -.02em;
+      line-height: 1;
+      font-variant-numeric: tabular-nums
+    }
+
+    .inv-hero .sub {
+      color: var(--ink-2);
+      font-size: 13px
+    }
+
+    .inv-lines {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0
+    }
+
+    @media (max-width:560px) {
+      .inv-lines {
+        grid-template-columns: repeat(2, minmax(0, 1fr))
+      }
+    }
+
+    .kv {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--line);
+      border-left: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      min-width: 0
+    }
+
+    .kv .k {
+      font-size: 11.5px;
+      color: var(--muted);
+      letter-spacing: .03em
+    }
+
+    .kv .v {
+      font-family: var(--f-mono);
+      font-size: 19px;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis
+    }
+
+    .kv .d {
+      font-size: 11.5px;
+      color: var(--ink-2)
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11.5px;
+      font-weight: 600;
+      padding: 2px 8px 2px 6px;
+      border-radius: 999px;
+      white-space: nowrap;
+      border: 1px solid var(--line);
+      background: var(--surface)
+    }
+
+    .chip i {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block
+    }
+
+    .chip.ok i {
+      background: var(--good)
+    }
+
+    .chip.ok {
+      color: var(--good-ink)
+    }
+
+    .chip.warn i {
+      background: var(--warn)
+    }
+
+    .chip.warn {
+      color: var(--warn-ink)
+    }
+
+    .chip.serious i {
+      background: var(--serious)
+    }
+
+    .chip.serious {
+      color: var(--serious-ink)
+    }
+
+    .chip.crit i {
+      background: var(--crit)
+    }
+
+    .chip.crit {
+      color: var(--crit-ink)
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--r);
+      padding: 16px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-width: 0
+    }
+
+    .card-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      flex-wrap: wrap
+    }
+
+    .card-head p {
+      margin: 3px 0 0;
+      color: var(--ink-2);
+      font-size: 12.5px;
+      max-width: 75ch
+    }
+
+    .grid2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px
+    }
+
+    @media (max-width:1180px) {
+      .grid2 {
+        grid-template-columns: minmax(0, 1fr)
+      }
+    }
+
+    .chartbox {
+      position: relative;
+      height: 290px;
+      width: 100%
+    }
+
+    .chartbox.tall {
+      height: 380px
+    }
+
+    .breaks {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+      gap: 10px
+    }
+
+    .bk {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 11px 13px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      position: relative;
+      overflow: hidden
+    }
+
+    .bk::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      background: var(--line)
+    }
+
+    .bk.ok::before {
+      background: var(--good)
+    }
+
+    .bk.warn::before {
+      background: var(--warn)
+    }
+
+    .bk.serious::before {
+      background: var(--serious)
+    }
+
+    .bk.crit::before {
+      background: var(--crit)
+    }
+
+    .bk .t {
+      font-size: 12px;
+      color: var(--ink-2);
+      font-weight: 600
+    }
+
+    .bk .v {
+      font-family: var(--f-mono);
+      font-size: 18px;
+      font-weight: 600
+    }
+
+    .bk .d {
+      font-size: 11.5px;
+      color: var(--muted)
+    }
+
+    .tbl-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px
+    }
+
+    table.data {
+      border-collapse: collapse;
+      width: 100%;
+      font-size: 12.5px;
+      min-width: 860px
+    }
+
+    table.data th,
+    table.data td {
+      padding: 7px 10px;
+      border-bottom: 1px solid var(--line);
+      text-align: right;
+      white-space: nowrap
+    }
+
+    table.data th {
+      font-weight: 600;
+      color: var(--muted);
+      font-size: 11.5px;
+      background: var(--surface-2);
+      position: sticky;
+      top: 0
+    }
+
+    table.data td {
+      font-family: var(--f-mono);
+      font-variant-numeric: tabular-nums
+    }
+
+    table.data th:first-child,
+    table.data td:first-child {
+      text-align: left
+    }
+
+    table.data tr.yr td {
+      border-top: 2px solid var(--line)
+    }
+
+    table.matrix {
+      min-width: 560px
+    }
+
+    .heat-wrap {
+      position: relative;
+      width: 100%;
+      overflow-x: auto
+    }
+
+    #heat {
+      display: block;
+      width: 100%;
+      min-width: 520px;
+      height: 360px
+    }
+
+    .legend-scale {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11.5px;
+      color: var(--muted);
+      flex-wrap: wrap
+    }
+
+    .legend-scale .bar {
+      width: 180px;
+      height: 8px;
+      border-radius: 4px
+    }
+
+    .tip {
+      position: fixed;
+      pointer-events: none;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, .14);
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 12px;
+      z-index: 50;
+      min-width: 160px
+    }
+
+    .tip b {
+      font-family: var(--f-mono);
+      font-size: 14px
+    }
+
+    .notes {
+      font-size: 12.5px;
+      color: var(--ink-2);
+      max-width: 95ch
+    }
+
+    .notes li {
+      margin-bottom: 4px
+    }
+
+    .notes a {
+      color: var(--accent)
+    }
+
+    .inline-ctl {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12.5px;
+      color: var(--ink-2);
+      flex-wrap: wrap
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        transition: none !important;
+        animation: none !important
+      }
+    }
+  </style>
+
+  <div class="wrap">
+    <header class="top">
+      <div>
+        <h1>Simulador de projeção de custos de IA 2028</h1>
+        <p>Projeção mensal de nov/2026 a dez/2028 da fatura de modelos de linguagem de uma empresa de software: preço
+          por milhão de tokens, volume de agentes autónomos e contextos de 100k+, opção de infraestrutura própria NVIDIA
+          Blackwell e efeito da energia na nuvem.</p>
+      </div>
+      <div class="scen-label">
+        <h3>Cenário de preços</h3>
+        <div class="seg" id="scenSeg" role="group" aria-label="Cenário de preços"></div>
+      </div>
+    </header>
+
+    <div class="layout">
+      <aside class="panel" id="panel" aria-label="Pressupostos">
+        <div class="panel-head">
+          <h2>Pressupostos</h2>
+          <button class="btn" id="resetBtn" type="button">Repor valores</button>
+        </div>
+        <div id="controls"></div>
+      </aside>
+
+      <main>
+        <section class="invoice" aria-label="Resumo da fatura">
+          <div class="inv-hero">
+            <span class="lbl">Fatura mensal de IA · dez/2028</span>
+            <span class="big" id="heroVal">–</span>
+            <span class="sub" id="heroSub">–</span>
+            <span id="heroChip"></span>
+          </div>
+          <div class="inv-lines" id="kpis"></div>
+        </section>
+
+        <section class="card" aria-labelledby="hBreaks">
+          <div class="card-head">
+            <div>
+              <h2 id="hBreaks">Pontos de ruptura financeira</h2>
+              <p>Primeiro mês em que cada limiar é ultrapassado no cenário ativo. Os limiares definem-se em <em>Empresa
+                  e limiares</em>.</p>
+            </div>
+          </div>
+          <div class="breaks" id="breaks"></div>
+          <div class="tbl-wrap">
+            <table class="data matrix" id="matrix"></table>
+          </div>
+        </section>
+
+        <div class="grid2">
+          <section class="card">
+            <div class="card-head">
+              <div>
+                <h2>Fatura mensal por origem de consumo</h2>
+                <p>Custo de API no cenário ativo, por tipo de carga. A linha mostra o custo total com a estratégia
+                  híbrida (quando a infraestrutura própria está ligada).</p>
+              </div>
+            </div>
+            <div class="chartbox"><canvas id="cCost" aria-label="Custo mensal por origem"></canvas></div>
+          </section>
+          <section class="card">
+            <div class="card-head">
+              <div>
+                <h2>Custo de IA em % da receita</h2>
+                <p>Os quatro cenários com o mesmo volume. As linhas tracejadas marcam o alerta, a ruptura de margem
+                  bruta e a ruptura operacional.</p>
+              </div>
+            </div>
+            <div class="chartbox"><canvas id="cPct" aria-label="Custo de IA em percentagem da receita"></canvas></div>
+          </section>
+          <section class="card">
+            <div class="card-head">
+              <div>
+                <h2>Volume diário de tokens</h2>
+                <p>Mil milhões de tokens por dia (entrada + saída). Os agentes reenviam o contexto acumulado em cada
+                  passo.</p>
+              </div>
+            </div>
+            <div class="chartbox"><canvas id="cTok" aria-label="Volume diário de tokens"></canvas></div>
+          </section>
+          <section class="card">
+            <div class="card-head">
+              <div>
+                <h2>Índice de preço por token</h2>
+                <p>Base 100 = preços de out/2026. Inclui tendência, salto pós-IPO e repasse do custo de energia.</p>
+              </div>
+            </div>
+            <div class="chartbox"><canvas id="cIdx" aria-label="Índice de preço por token"></canvas></div>
+          </section>
+        </div>
+
+        <section class="card">
+          <div class="card-head">
+            <div>
+              <h2>Só API vs. híbrido com GPUs Blackwell</h2>
+              <p id="selfDesc">Custo mensal total com toda a carga em API comparado com a migração da fração elegível
+                para modelos abertos em infraestrutura própria.</p>
+            </div>
+          </div>
+          <div class="chartbox"><canvas id="cSelf" aria-label="Comparação só API e híbrido"></canvas></div>
+        </section>
+
+        <div class="grid2">
+          <section class="card">
+            <div class="card-head">
+              <div>
+                <h2>Sensibilidade: custo acumulado 2026–2028</h2>
+                <p>Variação do custo total de IA quando cada pressuposto muda isoladamente.</p>
+              </div>
+              <label class="inline-ctl">Amplitude
+                <select id="tornDelta">
+                  <option value="0.1">±10%</option>
+                  <option value="0.25" selected>±25%</option>
+                  <option value="0.5">±50%</option>
+                </select>
+              </label>
+            </div>
+            <div class="chartbox tall"><canvas id="cTorn" aria-label="Gráfico tornado de sensibilidade"></canvas></div>
+          </section>
+          <section class="card">
+            <div class="card-head">
+              <div>
+                <h2>Mapa de ruptura: preço × volume</h2>
+                <p>Margem operacional no mês escolhido para cada combinação de multiplicador de preço e de volume. A
+                  linha preta separa lucro de prejuízo; o quadrado marca o cenário atual.</p>
+              </div>
+              <label class="inline-ctl">Mês
+                <select id="heatMonth"></select>
+              </label>
+            </div>
+            <div class="heat-wrap"><canvas id="heat" aria-label="Mapa de calor de margem operacional"></canvas></div>
+            <div class="legend-scale"><span>Prejuízo</span><span class="bar" id="heatBar"></span><span>Lucro</span><span
+                id="heatRange" class="mono"></span></div>
+          </section>
+        </div>
+
+        <section class="card">
+          <div class="card-head">
+            <div>
+              <h2>Projeção mensal</h2>
+              <p>Valores em euros, cenário ativo. Copie a tabela para colar numa folha de cálculo.</p>
+            </div>
+            <button class="btn" id="copyBtn" type="button">Copiar tabela</button>
+          </div>
+          <div class="tbl-wrap" style="max-height:520px">
+            <table class="data" id="tbl"></table>
+          </div>
+        </section>
+
+        <section class="card">
+          <details>
+            <summary style="cursor:pointer">
+              <h2 style="display:inline">Metodologia e fontes</h2>
+            </summary>
+            <div class="notes">
+              <ul>
+                <li><b>Custo de API</b> = tokens de entrada × (1 − cache) × preço de entrada + tokens em cache × preço
+                  de cache + tokens de saída × preço de saída, ponderado pelo mix de modelos. Aplica-se desconto de 50%
+                  à fração em batch, prémio de região UE e sobretaxa nos pedidos com contexto acima de 200k tokens.
+                  Preços de API em USD, convertidos pela taxa EUR/USD indicada.</li>
+                <li><b>Agentes</b>: cada passo reenvia o contexto acumulado (contexto inicial + incremento × passo), por
+                  isso o consumo de entrada cresce com o quadrado do número de passos. O contexto médio cresce à taxa
+                  anual indicada, empurrando pedidos para lá dos 200k.</li>
+                <li><b>Índice de preço</b> = tendência pré-IPO até ao mês do IPO × (1 + salto pós-IPO) × tendência
+                  pós-IPO × fator energia, onde fator energia = 1 + peso da energia no custo de inferência ×
+                  (crescimento acumulado do preço da eletricidade).</li>
+                <li><b>Infraestrutura própria</b>: custo por GPU = capex/amortização + manutenção anual + energia (kW ×
+                  PUE × 730 h × (€/kWh + custo de carbono)); em aluguer, preço/hora × 730. Capacidade = débito ×
+                  utilização. Os tokens de saída pesam como N tokens de entrada; tokens em cache pesam 0,1. Mínimo de um
+                  nó de 8 GPUs, mais equipa MLOps. Simplificação: em cada mês o custo usa hardware da geração e preço
+                  desse mês.</li>
+                <li><b>Rupturas</b>: alerta quando IA/receita excede o limiar; ruptura de margem bruta quando 1 − COGS
+                  não-IA − IA/receita fica abaixo do mínimo; ruptura operacional quando a margem bruta menos opex fica
+                  negativa.</li>
+                <li>Débito de GPU, capex all-in e o peso da energia são estimativas de ordem de grandeza: ajuste-os com
+                  cotações reais antes de decidir. Este simulador não é aconselhamento financeiro.</li>
+              </ul>
+              <p><b>Valores de referência (outubro de 2026)</b></p>
+              <ul>
+                <li>Preços de API por milhão de tokens a 6/out/2026: <a
+                    href="https://www.actuia.com/en/news/ai-api-pricing-in-october-2026-050-to-50-for-output/"
+                    target="_blank" rel="noopener">ActuIA</a>.</li>
+                <li>Preço/hora de B200 e B300 em nuvem a 8/out/2026: <a
+                    href="https://dev.to/viswaretas_kotra/gpu-cloud-pricing-october-2026-what-an-h100-h200-b200-or-b300-costs-per-hour-5a25"
+                    target="_blank" rel="noopener">DEV Community</a>; GB300 em <a
+                    href="https://computeprices.com/gpus/gb300" target="_blank" rel="noopener">ComputePrices</a>.</li>
+                <li>Preço de compra B200/B300, DGX e NVL72: <a
+                    href="https://tech-insider.org/nvidia-blackwell-gpu-pricing/" target="_blank" rel="noopener">Tech
+                    Insider</a>.</li>
+                <li>Subsídio de preços e pressão pré-IPO: <a
+                    href="https://www.axios.com/2026/03/12/ai-models-costs-ipo-pricing" target="_blank"
+                    rel="noopener">Axios</a>, <a
+                    href="https://www.cnbc.com/2026/05/20/cheap-ai-could-derail-openai-and-anthropics-ipos.html"
+                    target="_blank" rel="noopener">CNBC</a>.</li>
+                <li>Restrições energéticas, PUE e défice de rede até 2028: <a
+                    href="https://tech-insider.org/ai-data-center-power-crisis-2026/" target="_blank"
+                    rel="noopener">Tech Insider</a>, <a
+                    href="https://www.cnbc.com/2026/02/12/electricity-price-data-center-ai-inflation-goldman.html"
+                    target="_blank" rel="noopener">CNBC / Goldman Sachs</a>.</li>
+              </ul>
+            </div>
+          </details>
+        </section>
+      </main>
+    </div>
+  </div>
+  <div class="tip" id="tip" hidden></div>
+
+  <script>
+    /* ===================== MODELO ===================== */
+    const MONTHS = 26;           // nov/2026 .. dez/2028
+    const DPM = 30.42;           // dias por mês
+    const MES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+    function mLabel(t) { const d = new Date(2026, 10 + t, 1); return MES[d.getMonth()] + '/' + String(d.getFullYear()).slice(2); }
+
+    const SCEN_META = {
+      defl: { name: 'Deflação contínua', color: '--s3' },
+      base: { name: 'Base', color: '--s1' },
+      ipo: { name: 'Alta pós-IPO', color: '--s2' },
+      energ: { name: 'Choque energético', color: '--s4' }
+    };
+    const SCEN_KEYS = ['defl', 'base', 'ipo', 'energ'];
+
+    const GPU_PRESETS = {
+      b200: { name: 'B200 (HGX/DGX 8 GPU)', capex: 65, kw: 1.4, tp: 12000, rent: 5.50 },
+      b300: { name: 'B300 (HGX/DGX 8 GPU)', capex: 80, kw: 1.7, tp: 18000, rent: 6.94 },
+      gb300: { name: 'GB300 NVL72 (rack)', capex: 60, kw: 1.9, tp: 24000, rent: 5.74 }
+    };
+
+    const DEFAULTS = {
+      scen: 'base',
+      sc: {
+        defl: { pre: -40, ipo: 0, post: -35, elec: 2, esh: 10 },
+        base: { pre: -20, ipo: 0, post: -15, elec: 4, esh: 15 },
+        ipo: { pre: -10, ipo: 30, post: 0, elec: 5, esh: 15 },
+        energ: { pre: 0, ipo: 10, post: 10, elec: 15, esh: 35 }
+      },
+      ipoMonth: 7, euPrem: 10, fx: 1.16, priceMult: 1, volMult: 1,
+      // empresa
+      rev: 2.0, revG: 30, cogs: 18, opex: 55, alertPct: 15, gmFloor: 60, budget: 600,
+      // interativo
+      users: 8000, userG: 3, reqDay: 12, ctxN: 8, longSh: 10, ctxL: 150, outTok: 800, ctxG: 25, cacheInt: 50,
+      // agentes
+      runs: 2000, runG: 8, runCap: 60000, steps: 30, aCtx0: 20, aCtxStep: 3, aOut: 600, cacheAg: 75, revRun: 1.5,
+      // mix
+      shF: 25, fIn: 4, fCa: 0.20, fOut: 20,
+      shM: 50, mIn: 2, mCa: 0.20, mOut: 10,
+      shC: 25, cIn: 0.30, cCa: 0.03, cOut: 2.5,
+      batch: 15, surch: 50,
+      // infraestrutura própria
+      selfOn: true, selfMode: 'buy', gpu: 'b300', capex: 80, kw: 1.7, tp: 18000, rent: 6.94, util: 55, amort: 36, opsPct: 12,
+      elecPrice: 0.13, pue: 1.25, co2g: 110, co2Price: 80, hwTrend: -10, eff: 35, elig: 35, team: 45, wOut: 10
+    };
+
+    function blend(P, which) {
+      const tiers = [[P.shF, P.fIn, P.fCa, P.fOut], [P.shM, P.mIn, P.mCa, P.mOut], [P.shC, P.cIn, P.cCa, P.cOut]];
+      const use = which === 'open' ? tiers.slice(1) : tiers;
+      const W = use.reduce((a, t) => a + Math.max(0, t[0]), 0) || 1;
+      let pin = 0, pc = 0, pout = 0;
+      use.forEach(t => { const w = Math.max(0, t[0]) / W; pin += w * t[1]; pc += w * t[2]; pout += w * t[3]; });
+      return { pin, pc, pout, frontierW: Math.max(0, P.shF) / (Math.max(0, P.shF) + Math.max(0, P.shM) + Math.max(0, P.shC) || 1) };
+    }
+
+    function priceIndex(sc, t, ipo) {
+      let idx = Math.pow(1 + sc.pre / 100, Math.min(t, ipo) / 12);
+      if (t >= ipo) idx *= (1 + sc.ipo / 100) * Math.pow(1 + sc.post / 100, (t - ipo) / 12);
+      return idx * energyFactor(sc, t);
+    }
+    function energyFactor(sc, t) { return 1 + sc.esh / 100 * (Math.pow(1 + sc.elec / 100, t / 12) - 1); }
+
+    // custo diário em USD (antes de índice/prémios) para um bloco de tokens
+    function blockCost(I, Ilong, O, h, pr, surch) {
+      const inC = I * ((1 - h) * pr.pin + h * pr.pc) + Ilong * (1 - h) * pr.pin * surch;
+      const outC = O * pr.pout * (1 + surch * (I > 0 ? Ilong / I : 0));
+      return (inC + outC) / 1e6;
+    }
+
+    function simulate(P, scKey) {
+      const sc = P.sc[scKey];
+      const pr = blend(P, 'all'), po = blend(P, 'open');
+      const surch = P.surch / 100, hI = Math.min(.99, P.cacheInt / 100), hA = Math.min(.99, P.cacheAg / 100);
+      const elig = P.selfOn ? Math.min(P.elig / 100, 1 - pr.frontierW) : 0;
+      const R = {
+        t: [], label: [], idx: [], api: [], apiN: [], apiL: [], apiA: [], avoided: [], self: [], hybrid: [], used: [], rev: [], pct: [], gm: [], ebit: [],
+        tokInt: [], tokAg: [], tokTot: [], runs: [], costRun: [], gpus: [], co2: [], perGPU: [], selfPerM: [], apiPerM: [], ctxL: []
+      };
+      for (let t = 0; t < MONTHS; t++) {
+        const g = Math.pow(1 + P.ctxG / 100, t / 12);
+        const vm = P.volMult;
+        const users = P.users * Math.pow(1 + P.userG / 100, t);
+        const req = users * P.reqDay;
+        const ls = P.longSh / 100;
+        const cN = P.ctxN * 1000 * g, cL = P.ctxL * 1000 * g;
+        const In = req * (1 - ls) * cN * vm, Il = req * ls * cL * vm;
+        const InL = cN > 200000 ? In : 0, IlL = cL > 200000 ? Il : 0;
+        const On = req * (1 - ls) * P.outTok * vm, Ol = req * ls * P.outTok * vm;
+        const runs = Math.min(P.runCap, P.runs * Math.pow(1 + P.runG / 100, t));
+        let perRunI = 0, perRunL = 0;
+        for (let s = 0; s < P.steps; s++) { const c = (P.aCtx0 + P.aCtxStep * s) * 1000 * g; perRunI += c; if (c > 200000) perRunL += c; }
+        const Ia = runs * perRunI * vm, IaL = runs * perRunL * vm, Oa = runs * P.steps * P.aOut * vm;
+
+        const idx = priceIndex(sc, t, P.ipoMonth);
+        const mult = idx * P.priceMult * (1 + P.euPrem / 100) * (1 - P.batch / 100 * 0.5) / P.fx * DPM;
+        const cNd = blockCost(In, InL, On, hI, pr, surch) * mult;
+        const cLd = blockCost(Il, IlL, Ol, hI, pr, surch) * mult;
+        const cAd = blockCost(Ia, IaL, Oa, hA, pr, surch) * mult;
+        const api = cNd + cLd + cAd;
+
+        // infraestrutura própria
+        let avoided = 0, self = 0, gpus = 0, co2 = 0, perGPU = 0, selfPerM = 0;
+        {
+          const elec = P.elecPrice * Math.pow(1 + sc.elec / 100, t / 12);
+          const carbon = P.co2g / 1e6 * P.co2Price;
+          const power = P.kw * P.pue * 730 * (elec + carbon);
+          if (P.selfMode === 'buy') {
+            const capexE = P.capex * 1000 * Math.pow(1 + P.hwTrend / 100, t / 12) / P.fx;
+            perGPU = capexE / Math.max(1, P.amort) + capexE * P.opsPct / 100 / 12 + power;
+          } else {
+            perGPU = P.rent * 730 / P.fx * energyFactor(sc, t);
+          }
+          const tp = P.tp * Math.pow(1 + P.eff / 100, t / 12);
+          const capM = tp * P.util / 100 * 3600 * 730;
+          selfPerM = perGPU / capM * 1e6;
+          if (elig > 0) {
+            const eq = elig * ((1 - hI) * (In + Il) + 0.1 * hI * (In + Il) + (1 - hA) * Ia + 0.1 * hA * Ia + P.wOut * (On + Ol + Oa));
+            avoided = elig * (blockCost(In, InL, On, hI, po, surch) + blockCost(Il, IlL, Ol, hI, po, surch) + blockCost(Ia, IaL, Oa, hA, po, surch)) * mult;
+            gpus = Math.max(8, Math.ceil(eq * DPM / capM / 8) * 8);
+            self = gpus * perGPU + P.team * 1000;
+            co2 = gpus * P.kw * P.pue * 730 * P.co2g / 1e6;
+          }
+        }
+        const hybrid = api - avoided + self;
+        const used = elig > 0 ? hybrid : api;
+        const rev = P.rev * 1e6 * Math.pow(1 + P.revG / 100, t / 12) + runs * DPM * P.revRun;
+        const pct = used / rev, gm = 1 - P.cogs / 100 - pct, ebit = gm - P.opex / 100;
+        const tokInt = In + Il + On + Ol, tokAg = Ia + Oa;
+
+        R.t.push(t); R.label.push(mLabel(t)); R.idx.push(idx);
+        R.api.push(api); R.apiN.push(cNd); R.apiL.push(cLd); R.apiA.push(cAd);
+        R.avoided.push(avoided); R.self.push(self); R.hybrid.push(hybrid); R.used.push(used);
+        R.rev.push(rev); R.pct.push(pct); R.gm.push(gm); R.ebit.push(ebit);
+        R.tokInt.push(tokInt); R.tokAg.push(tokAg); R.tokTot.push(tokInt + tokAg); R.runs.push(runs);
+        R.costRun.push(runs > 0 ? cAd / (runs * DPM) : 0);
+        R.gpus.push(gpus); R.co2.push(co2); R.perGPU.push(perGPU); R.selfPerM.push(selfPerM);
+        R.apiPerM.push(api / ((tokInt + tokAg) * DPM / 1e6)); R.ctxL.push(cL);
+      }
+      R.cum = R.used.reduce((a, b) => a + b, 0);
+      R.cumApi = R.api.reduce((a, b) => a + b, 0);
+      return R;
+    }
+
+    function statusOf(P, pct, gm, ebit) {
+      if (ebit < 0) return 'crit';
+      if (gm < P.gmFloor / 100) return 'serious';
+      if (pct > P.alertPct / 100) return 'warn';
+      return 'ok';
+    }
+    const STATUS_TXT = { ok: 'Saudável', warn: 'Alerta', serious: 'Ruptura de margem', crit: 'Ruptura operacional' };
+
+    function firstMonth(arr, pred) { for (let i = 0; i < arr.length; i++) if (pred(arr[i], i)) return i; return -1; }
+    function breakpoints(P, R) {
+      return {
+        alert: firstMonth(R.pct, v => v > P.alertPct / 100),
+        gm: firstMonth(R.gm, v => v < P.gmFloor / 100),
+        ebit: firstMonth(R.ebit, v => v < 0),
+        budget: firstMonth(R.used, v => v > P.budget * 1000),
+        cross: firstMonth(R.t, i => R.avoided[i] > 0 && R.hybrid[i] < R.api[i])
+      };
+    }
+    /* =================== FIM MODELO =================== */
+
+    /* ===================== UI ===================== */
+    const STORE_KEY = 'sim-fatura-ia-v1';
+    let P = loadState();
+    function clone(o) { return JSON.parse(JSON.stringify(o)); }
+    function loadState() {
+      try { const s = localStorage.getItem(STORE_KEY); if (s) { const o = JSON.parse(s); const d = clone(DEFAULTS); Object.assign(d, o); d.sc = Object.assign(clone(DEFAULTS.sc), o.sc || {}); return d; } } catch (e) { }
+      return clone(DEFAULTS);
+    }
+    function saveState() { try { localStorage.setItem(STORE_KEY, JSON.stringify(P)); } catch (e) { } }
+
+    const nf = (d = 0) => new Intl.NumberFormat('pt-PT', { minimumFractionDigits: d, maximumFractionDigits: d });
+    function eur(v, d) {
+      const a = Math.abs(v);
+      if (a >= 1e6) return (d === undefined ? nf(2) : nf(d)).format(v / 1e6) + ' M€';
+      if (a >= 1e3) return (d === undefined ? nf(0) : nf(d)).format(v / 1e3) + ' k€';
+      return nf(d === undefined ? 2 : d).format(v) + ' €';
+    }
+    function pct(v, d = 1) { return nf(d).format(v * 100) + '%'; }
+    function tok(v) {
+      const a = Math.abs(v);
+      if (a >= 1e9) return nf(2).format(v / 1e9) + ' mil M'; if (a >= 1e6) return nf(1).format(v / 1e6) + ' M'; if (a >= 1e3) return nf(0).format(v / 1e3) + ' k'; return nf(0).format(v);
+    }
+    function monthTxt(i) { return i < 0 ? 'Não atingido' : mLabel(i); }
+
+    // esquema de controlos
+    const GROUPS = [
+      {
+        title: 'Cenário de preços', open: true, custom: 'scen', fields: [
+          { k: 'ipoMonth', label: 'Mês do IPO dos laboratórios frontier', type: 'month' },
+          { k: 'euPrem', label: 'Prémio região UE / energia verde', min: 0, max: 40, step: 1, unit: '%' },
+          { k: 'fx', label: 'Câmbio', min: 0.9, max: 1.4, step: 0.01, unit: 'USD por €' },
+        ]
+      },
+      {
+        title: 'Empresa e limiares', open: true, fields: [
+          { k: 'rev', label: 'Receita mensal atual', min: 0.2, max: 50, step: 0.1, unit: 'M€' },
+          { k: 'revG', label: 'Crescimento da receita', min: -20, max: 150, step: 1, unit: '%/ano' },
+          { k: 'cogs', label: 'COGS sem IA', min: 0, max: 60, step: 1, unit: '% receita' },
+          { k: 'opex', label: 'Opex (I&D, vendas, G&A)', min: 0, max: 90, step: 1, unit: '% receita' },
+          { k: 'alertPct', label: 'Alerta: IA acima de', min: 1, max: 50, step: 1, unit: '% receita' },
+          { k: 'gmFloor', label: 'Margem bruta mínima', min: 20, max: 90, step: 1, unit: '%' },
+          { k: 'budget', label: 'Orçamento mensal de IA', min: 10, max: 20000, step: 10, unit: 'k€' },
+        ]
+      },
+      {
+        title: 'Uso interativo (copilotos, chat)', fields: [
+          { k: 'users', label: 'Utilizadores ativos', min: 100, max: 500000, step: 100, unit: '' },
+          { k: 'userG', label: 'Crescimento de utilizadores', min: -5, max: 20, step: 0.5, unit: '%/mês' },
+          { k: 'reqDay', label: 'Pedidos por utilizador', min: 1, max: 200, step: 1, unit: '/dia' },
+          { k: 'ctxN', label: 'Contexto médio normal', min: 1, max: 100, step: 1, unit: 'k tok' },
+          { k: 'longSh', label: 'Pedidos de contexto longo', min: 0, max: 100, step: 1, unit: '%' },
+          { k: 'ctxL', label: 'Contexto longo médio', min: 100, max: 1000, step: 10, unit: 'k tok' },
+          { k: 'outTok', label: 'Tokens de saída por pedido', min: 50, max: 8000, step: 50, unit: 'tok' },
+          { k: 'ctxG', label: 'Crescimento do contexto', min: 0, max: 100, step: 1, unit: '%/ano' },
+          { k: 'cacheInt', label: 'Taxa de cache (interativo)', min: 0, max: 95, step: 1, unit: '%' },
+        ]
+      },
+      {
+        title: 'Agentes autónomos', fields: [
+          { k: 'runs', label: 'Execuções de agente', min: 0, max: 200000, step: 100, unit: '/dia' },
+          { k: 'runG', label: 'Crescimento das execuções', min: 0, max: 30, step: 0.5, unit: '%/mês' },
+          { k: 'runCap', label: 'Teto de execuções', min: 100, max: 1000000, step: 1000, unit: '/dia' },
+          { k: 'steps', label: 'Passos por execução', min: 1, max: 200, step: 1, unit: '' },
+          { k: 'aCtx0', label: 'Contexto inicial', min: 1, max: 200, step: 1, unit: 'k tok' },
+          { k: 'aCtxStep', label: 'Contexto acrescentado por passo', min: 0, max: 30, step: 0.5, unit: 'k tok' },
+          { k: 'aOut', label: 'Saída por passo', min: 50, max: 5000, step: 50, unit: 'tok' },
+          { k: 'cacheAg', label: 'Taxa de cache (agentes)', min: 0, max: 98, step: 1, unit: '%' },
+          { k: 'revRun', label: 'Receita por execução', min: 0, max: 20, step: 0.05, unit: '€' },
+        ]
+      },
+      {
+        title: 'Mix de modelos e preços de API', custom: 'tiers', fields: [
+          { k: 'batch', label: 'Tráfego em batch (−50%)', min: 0, max: 80, step: 1, unit: '%' },
+          { k: 'surch', label: 'Sobretaxa acima de 200k tokens', min: 0, max: 150, step: 5, unit: '%' },
+        ]
+      },
+      {
+        title: 'Infraestrutura própria (NVIDIA Blackwell)', custom: 'self', fields: [
+          { k: 'capex', label: 'Capex all-in por GPU', min: 20, max: 150, step: 1, unit: 'k USD', modes: ['buy'] },
+          { k: 'rent', label: 'Aluguer em nuvem', min: 1, max: 15, step: 0.01, unit: 'USD/GPU·h', modes: ['rent'] },
+          { k: 'kw', label: 'Potência por GPU (sistema)', min: 0.5, max: 3, step: 0.05, unit: 'kW' },
+          { k: 'tp', label: 'Débito por GPU', min: 2000, max: 100000, step: 500, unit: 'tok eq/s' },
+          { k: 'util', label: 'Utilização média', min: 10, max: 95, step: 1, unit: '%' },
+          { k: 'amort', label: 'Amortização', min: 12, max: 72, step: 1, unit: 'meses', modes: ['buy'] },
+          { k: 'opsPct', label: 'Manutenção e colocation', min: 0, max: 40, step: 1, unit: '% capex/ano', modes: ['buy'] },
+          { k: 'elecPrice', label: 'Preço da eletricidade', min: 0.03, max: 0.4, step: 0.005, unit: '€/kWh', modes: ['buy'] },
+          { k: 'pue', label: 'PUE do datacenter', min: 1.05, max: 2, step: 0.01, unit: '' },
+          { k: 'co2g', label: 'Intensidade carbónica da rede', min: 0, max: 700, step: 5, unit: 'gCO₂/kWh' },
+          { k: 'co2Price', label: 'Preço do carbono', min: 0, max: 250, step: 1, unit: '€/t' },
+          { k: 'hwTrend', label: 'Evolução do preço do hardware', min: -40, max: 40, step: 1, unit: '%/ano', modes: ['buy'] },
+          { k: 'eff', label: 'Ganho de eficiência por geração', min: 0, max: 100, step: 1, unit: '%/ano' },
+          { k: 'elig', label: 'Tráfego migrável para modelos abertos', min: 0, max: 100, step: 1, unit: '%' },
+          { k: 'team', label: 'Equipa MLOps', min: 0, max: 500, step: 5, unit: 'k€/mês' },
+          { k: 'wOut', label: 'Peso de 1 token de saída', min: 1, max: 30, step: 1, unit: 'tok entrada' },
+        ]
+      },
+    ];
+
+    const controlsEl = document.getElementById('controls');
+    function fieldHTML(f) {
+      if (f.type === 'month') {
+        let opts = ''; for (let t = 0; t < MONTHS; t++) opts += `<option value="${t}">${mLabel(t)}</option>`;
+        return `<div class="f"><div class="f-row"><label for="in_${f.k}">${f.label}</label><select id="in_${f.k}" data-k="${f.k}">${opts}</select></div></div>`;
+      }
+      return `<div class="f" ${f.modes ? `data-modes="${f.modes.join(',')}"` : ''}><div class="f-row"><label for="in_${f.k}">${f.label}${f.unit ? `<span class="unit">${f.unit}</span>` : ''}</label>
+    <input type="number" id="in_${f.k}" data-k="${f.k}" min="${f.min}" max="${f.max}" step="${f.step}"></div>
+    <input type="range" id="rg_${f.k}" data-k="${f.k}" min="${f.min}" max="${f.max}" step="${f.step}" aria-label="${f.label}"></div>`;
+    }
+    function scenHTML() {
+      return `<p class="help" id="scenHelp"></p>
+  <table class="tiers" aria-label="Parâmetros do cenário ativo"><tbody>
+    <tr><td><label for="sc_pre">Tendência antes do IPO</label></td><td style="width:90px"><input type="number" id="sc_pre" data-sc="pre" step="1"></td><td class="muted small">%/ano</td></tr>
+    <tr><td><label for="sc_ipo">Salto no IPO</label></td><td><input type="number" id="sc_ipo" data-sc="ipo" step="1"></td><td class="muted small">%</td></tr>
+    <tr><td><label for="sc_post">Tendência após o IPO</label></td><td><input type="number" id="sc_post" data-sc="post" step="1"></td><td class="muted small">%/ano</td></tr>
+    <tr><td><label for="sc_elec">Eletricidade de datacenter</label></td><td><input type="number" id="sc_elec" data-sc="elec" step="0.5"></td><td class="muted small">%/ano</td></tr>
+    <tr><td><label for="sc_esh">Peso da energia na inferência</label></td><td><input type="number" id="sc_esh" data-sc="esh" step="1"></td><td class="muted small">%</td></tr>
+  </tbody></table>`;
+    }
+    function tiersHTML() {
+      const row = (n, p) => `<tr><td>${n}</td>${['sh', 'In', 'Ca', 'Out'].map(s => { const k = s === 'sh' ? 'sh' + p.toUpperCase() : p + s; return `<td><input type="number" id="in_${k}" data-k="${k}" step="${s === 'sh' ? 1 : 0.01}" min="0" aria-label="${n} ${s}"></td>`; }).join('')}</tr>`;
+      return `<p class="help">Quota do volume e preço em USD por milhão de tokens (entrada, entrada em cache, saída). Referência out/2026: Opus 5.5 4/0,20/20; Sonnet 5.5 2/0,20/10; Flash-Lite 0,30/0,03/2,50.</p>
+  <table class="tiers"><thead><tr><th>Escalão</th><th>Quota %</th><th>Entrada</th><th>Cache</th><th>Saída</th></tr></thead><tbody>
+  ${row('Frontier', 'f')}${row('Intermédio', 'm')}${row('Económico', 'c')}</tbody></table>`;
+    }
+    function selfHTML() {
+      let opts = ''; for (const [k, g] of Object.entries(GPU_PRESETS)) opts += `<option value="${k}">${g.name}</option>`;
+      return `<label class="toggle"><input type="checkbox" id="selfOn"> Incluir estratégia híbrida</label>
+  <div class="seg" id="modeSeg" role="group" aria-label="Modelo de aquisição"><button type="button" data-mode="buy">Compra</button><button type="button" data-mode="rent">Aluguer em nuvem</button></div>
+  <div class="f"><div class="f-row"><label for="gpuSel">Plataforma</label><select id="gpuSel">${opts}</select></div>
+  <p class="help">Escolher uma plataforma preenche capex, potência, débito e aluguer com estimativas.</p></div>`;
+    }
+    function buildControls() {
+      let html = '';
+      GROUPS.forEach(g => {
+        html += `<details class="grp" ${g.open ? 'open' : ''}><summary>${g.title}</summary><div class="fields">`;
+        if (g.custom === 'scen') html += scenHTML();
+        if (g.custom === 'tiers') html += tiersHTML();
+        if (g.custom === 'self') html += selfHTML();
+        g.fields.forEach(f => html += fieldHTML(f));
+        html += `</div></details>`;
+      });
+      controlsEl.innerHTML = html;
+      controlsEl.addEventListener('input', onInput);
+      controlsEl.addEventListener('change', onInput);
+      document.getElementById('modeSeg').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; P.selfMode = b.dataset.mode; syncControls(); schedule(); });
+      document.getElementById('gpuSel').addEventListener('change', e => { const g = GPU_PRESETS[e.target.value]; P.gpu = e.target.value; Object.assign(P, { capex: g.capex, kw: g.kw, tp: g.tp, rent: g.rent }); syncControls(); schedule(); });
+    }
+    function onInput(e) {
+      const el = e.target;
+      if (el.id === 'selfOn') { P.selfOn = el.checked; schedule(); return; }
+      if (el.dataset.sc) { const v = parseFloat(el.value); if (!isNaN(v)) { P.sc[P.scen][el.dataset.sc] = v; schedule(); } return; }
+      const k = el.dataset.k; if (!k) return;
+      const v = parseFloat(el.value); if (isNaN(v)) return;
+      P[k] = v;
+      const other = document.getElementById((el.type === 'range' ? 'in_' : 'rg_') + k); if (other && other !== el) other.value = v;
+      schedule();
+    }
+    function syncControls() {
+      controlsEl.querySelectorAll('[data-k]').forEach(el => { const v = P[el.dataset.k]; if (v !== undefined && document.activeElement !== el) el.value = v; });
+      const sc = P.sc[P.scen];
+      ['pre', 'ipo', 'post', 'elec', 'esh'].forEach(k => { const el = document.getElementById('sc_' + k); if (document.activeElement !== el) el.value = sc[k]; });
+      document.getElementById('scenHelp').textContent = 'A editar: ' + SCEN_META[P.scen].name + '. Cada cenário guarda os seus próprios valores.';
+      document.getElementById('selfOn').checked = P.selfOn;
+      document.getElementById('gpuSel').value = P.gpu;
+      document.querySelectorAll('#modeSeg button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === P.selfMode)));
+      controlsEl.querySelectorAll('[data-modes]').forEach(el => { el.hidden = !el.dataset.modes.split(',').includes(P.selfMode); });
+      document.querySelectorAll('#scenSeg button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.s === P.scen)));
+    }
+    function buildScenSeg() {
+      const seg = document.getElementById('scenSeg');
+      SCEN_KEYS.forEach(k => {
+        const b = document.createElement('button'); b.type = 'button'; b.dataset.s = k;
+        const key = document.createElement('span'); key.className = 'key'; key.style.background = `var(${SCEN_META[k].color})`;
+        b.appendChild(key); b.appendChild(document.createTextNode(SCEN_META[k].name));
+        seg.appendChild(b);
+      });
+      seg.addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; P.scen = b.dataset.s; syncControls(); schedule(); });
+    }
+
+    /* ---------- gráficos ---------- */
+    const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+    let charts = {};
+    function baseOpts(yFmt, extra = {}) {
+      const ink2 = css('--ink-2'), grid = css('--grid'), muted = css('--muted');
+      return Object.assign({
+        responsive: true, maintainAspectRatio: false, animation: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { position: 'bottom', labels: { color: ink2, boxWidth: 14, boxHeight: 3, font: { family: 'Archivo', size: 11.5 }, filter: (i) => !i.text.startsWith('_') } },
+          tooltip: {
+            backgroundColor: css('--surface'), titleColor: css('--ink'), bodyColor: css('--ink'), borderColor: css('--line'), borderWidth: 1, padding: 10,
+            titleFont: { family: 'Archivo', weight: '600' }, bodyFont: { family: 'IBM Plex Mono', size: 12 }, boxWidth: 12, boxHeight: 2,
+            callbacks: { label: (c) => c.dataset.label.startsWith('_') ? null : ' ' + yFmt(c.parsed.y) + '  ' + c.dataset.label }
+          }
+        },
+        scales: {
+          x: { grid: { display: false }, border: { color: grid }, ticks: { color: muted, font: { family: 'IBM Plex Mono', size: 10.5 }, maxRotation: 0, autoSkipPadding: 12 } },
+          y: { grid: { color: grid }, border: { display: false }, ticks: { color: muted, font: { family: 'IBM Plex Mono', size: 10.5 }, callback: (v) => yFmt(v) }, beginAtZero: true }
+        }
+      }, extra);
+    }
+    function line(label, data, color, o = {}) { return Object.assign({ type: 'line', label, data, borderColor: color, backgroundColor: color, borderWidth: 2, pointRadius: 0, pointHoverRadius: 4, tension: 0.25 }, o); }
+
+    function buildCharts() {
+      Object.values(charts).forEach(c => c.destroy()); charts = {};
+      if (!window.Chart) return;
+      Chart.defaults.font.family = 'Archivo';
+      const s1 = css('--s1'), s2 = css('--s2'), s3 = css('--s3'), s4 = css('--s4'), ink = css('--ink'), surf = css('--surface');
+      const L = [...Array(MONTHS).keys()].map(mLabel);
+
+      charts.cost = new Chart(document.getElementById('cCost'), {
+        type: 'bar', data: {
+          labels: L, datasets: [
+            line('Total com estratégia híbrida', [], ink, { order: 0, borderWidth: 2 }),
+            { label: 'Interativo normal', data: [], backgroundColor: s1, stack: 'a', order: 1, borderColor: surf, borderWidth: { top: 1 }, borderRadius: 2 },
+            { label: 'Contexto longo (100k+)', data: [], backgroundColor: s2, stack: 'a', order: 1, borderColor: surf, borderWidth: { top: 1 }, borderRadius: 2 },
+            { label: 'Agentes autónomos', data: [], backgroundColor: s3, stack: 'a', order: 1, borderColor: surf, borderWidth: { top: 1 }, borderRadius: { topLeft: 4, topRight: 4 } },
+          ]
+        }, options: baseOpts(v => eur(v, 0), {})
+      });
+      charts.cost.options.scales.x.stacked = true; charts.cost.options.scales.y.stacked = true;
+
+      const sc = SCEN_KEYS.map(k => css(SCEN_META[k].color));
+      charts.pct = new Chart(document.getElementById('cPct'), {
+        type: 'line', data: {
+          labels: L, datasets: [
+            ...SCEN_KEYS.map((k, i) => line(SCEN_META[k].name, [], sc[i])),
+            line('Alerta', [], css('--warn'), { borderDash: [5, 4], borderWidth: 1.5 }),
+            line('Ruptura de margem bruta', [], css('--serious'), { borderDash: [5, 4], borderWidth: 1.5 }),
+            line('Ruptura operacional', [], css('--crit'), { borderDash: [5, 4], borderWidth: 1.5 }),
+          ]
+        }, options: baseOpts(v => pct(v, 0))
+      });
+
+      charts.tok = new Chart(document.getElementById('cTok'), {
+        type: 'line', data: {
+          labels: L, datasets: [
+            line('Interativo', [], s1, { fill: 'origin', backgroundColor: s1 + '55', stack: 't' }),
+            line('Agentes autónomos', [], s3, { fill: '-1', backgroundColor: s3 + '55', stack: 't' }),
+          ]
+        }, options: baseOpts(v => nf(v < 10 ? 1 : 0).format(v) + ' mil M')
+      });
+      charts.tok.options.scales.y.stacked = true;
+
+      charts.idx = new Chart(document.getElementById('cIdx'), {
+        type: 'line', data: {
+          labels: L, datasets:
+            SCEN_KEYS.map((k, i) => line(SCEN_META[k].name, [], sc[i]))
+        }, options: baseOpts(v => nf(0).format(v))
+      });
+      charts.idx.options.scales.y.beginAtZero = false;
+
+      charts.self = new Chart(document.getElementById('cSelf'), {
+        type: 'line', data: {
+          labels: L, datasets: [
+            line('Só API', [], s1),
+            line('Híbrido (API + Blackwell próprio)', [], s2),
+            line('Receita × limiar de alerta', [], css('--warn'), { borderDash: [5, 4], borderWidth: 1.5 }),
+          ]
+        }, options: baseOpts(v => eur(v, 0))
+      });
+
+      charts.torn = new Chart(document.getElementById('cTorn'), {
+        type: 'bar', data: {
+          labels: [], datasets: [
+            { label: 'Pressuposto −', data: [], backgroundColor: s1, borderRadius: 3, barPercentage: 0.9, categoryPercentage: 0.75, grouped: false },
+            { label: 'Pressuposto +', data: [], backgroundColor: s2, borderRadius: 3, barPercentage: 0.9, categoryPercentage: 0.75, grouped: false },
+          ]
+        }, options: baseOpts(v => (v > 0 ? '+' : '') + nf(0).format(v) + '%', { indexAxis: 'y', interaction: { mode: 'y', intersect: false } })
+      });
+      const to = charts.torn.options;
+      to.scales.y = { grid: { display: false }, border: { color: css('--grid') }, ticks: { color: css('--ink-2'), font: { family: 'Archivo', size: 11.5 } } };
+      to.scales.x = { grid: { color: css('--grid') }, border: { display: false }, ticks: { color: css('--muted'), font: { family: 'IBM Plex Mono', size: 10.5 }, callback: (v) => (v > 0 ? '+' : '') + nf(0).format(v) + '%' } };
+      to.plugins.tooltip.callbacks.label = (c) => { const r = c.raw; const v = Array.isArray(r) ? (r[0] === 0 ? r[1] : r[0]) : r; return ' ' + (v > 0 ? '+' : '') + nf(1).format(v) + '%  ' + c.dataset.label; };
+    }
+
+    /* ---------- sensibilidade ---------- */
+    const TORN_VARS = [
+      ['priceMult', 'Preço por token (todos os escalões)'],
+      ['runG', 'Crescimento das execuções de agente'],
+      ['steps', 'Passos por execução de agente'],
+      ['aCtxStep', 'Contexto acrescentado por passo'],
+      ['aCtx0', 'Contexto inicial do agente'],
+      ['cacheAg', 'Taxa de cache dos agentes'],
+      ['users', 'Utilizadores ativos'],
+      ['userG', 'Crescimento de utilizadores'],
+      ['reqDay', 'Pedidos por utilizador'],
+      ['longSh', 'Quota de contexto longo'],
+      ['ctxL', 'Tamanho do contexto longo'],
+      ['ctxG', 'Crescimento anual do contexto'],
+      ['outTok', 'Tokens de saída por pedido'],
+      ['shF', 'Quota de modelos frontier'],
+      ['euPrem', 'Prémio região UE'],
+    ];
+    function tornado(delta) {
+      const base = simulate(P, P.scen).cum;
+      const rows = TORN_VARS.map(([k, lab]) => {
+        const run = f => { const Q = clone(P); let v = Q[k] * f; if (k === 'cacheAg' || k === 'cacheInt') v = Math.min(98, v); if (k === 'steps') v = Math.max(1, Math.round(v)); Q[k] = v; return (simulate(Q, P.scen).cum / base - 1) * 100; };
+        const lo = run(1 - delta), hi = run(1 + delta);
+        return { lab, lo, hi, span: Math.abs(hi - lo) };
+      }).sort((a, b) => b.span - a.span).slice(0, 12);
+      return { base, rows };
+    }
+
+    /* ---------- mapa de calor ---------- */
+    const HX = [0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.1, 1.25, 1.5, 1.75, 2, 2.5, 3];
+    const HY = [3, 2.5, 2, 1.75, 1.5, 1.25, 1, 0.75, 0.5];
+    let heatData = null;
+    function computeHeat(month) {
+      const cells = [];
+      for (let yi = 0; yi < HY.length; yi++) for (let xi = 0; xi < HX.length; xi++) {
+        const Q = clone(P); Q.priceMult = HX[xi] * P.priceMult; Q.volMult = HY[yi] * P.volMult;
+        const R = simulate(Q, P.scen);
+        cells.push({ xi, yi, v: R.ebit[month], ai: R.used[month], pct: R.pct[month] });
+      }
+      return cells;
+    }
+    function hexToRgb(h) { h = h.replace('#', ''); if (h.length === 3) h = h.split('').map(c => c + c).join(''); const n = parseInt(h, 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
+    function mix(a, b, t) { return a.map((v, i) => Math.round(v + (b[i] - v) * t)); }
+    function divColor(v, lim) {
+      const neg = hexToRgb(css('--div-neg')), mid = hexToRgb(css('--div-mid')), pos = hexToRgb(css('--div-pos'));
+      const t = Math.max(-1, Math.min(1, v / lim));
+      const c = t < 0 ? mix(mid, neg, -t) : mix(mid, pos, t);
+      return `rgb(${c[0]},${c[1]},${c[2]})`;
+    }
+    const heatCv = document.getElementById('heat');
+    let heatGeom = null;
+    function drawHeat() {
+      const month = +document.getElementById('heatMonth').value;
+      heatData = computeHeat(month);
+      const dpr = window.devicePixelRatio || 1;
+      const W = heatCv.clientWidth, H = heatCv.clientHeight;
+      heatCv.width = W * dpr; heatCv.height = H * dpr;
+      const ctx = heatCv.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
+      const padL = 46, padB = 40, padT = 8, padR = 8;
+      const cw = (W - padL - padR) / HX.length, ch = (H - padT - padB) / HY.length;
+      const limC = 0.3;
+      heatData.forEach(c => {
+        ctx.fillStyle = divColor(c.v, limC);
+        ctx.fillRect(padL + c.xi * cw + 1, padT + c.yi * ch + 1, cw - 2, ch - 2);
+      });
+      // fronteira lucro/prejuízo
+      ctx.strokeStyle = css('--ink'); ctx.lineWidth = 2;
+      ctx.beginPath();
+      const val = (xi, yi) => heatData[yi * HX.length + xi].v;
+      for (let yi = 0; yi < HY.length; yi++) for (let xi = 0; xi < HX.length; xi++) {
+        const v = val(xi, yi);
+        if (xi < HX.length - 1 && (v >= 0) !== (val(xi + 1, yi) >= 0)) { const x = padL + (xi + 1) * cw; ctx.moveTo(x, padT + yi * ch); ctx.lineTo(x, padT + (yi + 1) * ch); }
+        if (yi < HY.length - 1 && (v >= 0) !== (val(xi, yi + 1) >= 0)) { const y = padT + (yi + 1) * ch; ctx.moveTo(padL + xi * cw, y); ctx.lineTo(padL + (xi + 1) * cw, y); }
+      }
+      ctx.stroke();
+      // célula atual
+      const cx = HX.indexOf(1), cy = HY.indexOf(1);
+      ctx.strokeStyle = css('--surface'); ctx.lineWidth = 3; ctx.strokeRect(padL + cx * cw + 3, padT + cy * ch + 3, cw - 6, ch - 6);
+      ctx.strokeStyle = css('--ink'); ctx.lineWidth = 1.5; ctx.strokeRect(padL + cx * cw + 3, padT + cy * ch + 3, cw - 6, ch - 6);
+      // valores selecionados nas células (apenas linha e coluna atuais, para legibilidade)
+      ctx.font = '10.5px "IBM Plex Mono", monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      // eixos
+      ctx.fillStyle = css('--muted');
+      HX.forEach((x, i) => ctx.fillText('×' + nf(x % 1 ? 2 : 0).format(x).replace(/0$/, ''), padL + i * cw + cw / 2, H - padB + 13));
+      ctx.textAlign = 'right';
+      HY.forEach((y, i) => ctx.fillText('×' + nf(y % 1 ? 2 : 0).format(y).replace(/0$/, ''), padL - 6, padT + i * ch + ch / 2));
+      ctx.textAlign = 'center'; ctx.fillStyle = css('--ink-2'); ctx.font = '11.5px Archivo, sans-serif';
+      ctx.fillText('Multiplicador de preço por token', padL + (W - padL - padR) / 2, H - 8);
+      ctx.save(); ctx.translate(11, padT + (H - padT - padB) / 2); ctx.rotate(-Math.PI / 2); ctx.fillText('Multiplicador de volume', 0, 0); ctx.restore();
+      heatGeom = { padL, padT, cw, ch };
+      document.getElementById('heatBar').style.background = `linear-gradient(90deg, ${divColor(-1, 1)}, ${divColor(0, 1)}, ${divColor(1, 1)})`;
+      document.getElementById('heatRange').textContent = `escala saturada em ±${pct(limC, 0)}`;
+    }
+    const tipEl = document.getElementById('tip');
+    function showTip(x, y, nodes) {
+      tipEl.replaceChildren(...nodes); tipEl.hidden = false;
+      const r = tipEl.getBoundingClientRect();
+      let lx = x + 14, ly = y + 14;
+      if (lx + r.width > window.innerWidth - 8) lx = x - r.width - 14;
+      if (ly + r.height > window.innerHeight - 8) ly = y - r.height - 14;
+      tipEl.style.left = lx + 'px'; tipEl.style.top = ly + 'px';
+    }
+    function txt(tag, t, cls) { const e = document.createElement(tag); e.textContent = t; if (cls) e.className = cls; return e; }
+    heatCv.addEventListener('pointermove', e => {
+      if (!heatGeom || !heatData) return;
+      const r = heatCv.getBoundingClientRect();
+      const xi = Math.floor((e.clientX - r.left - heatGeom.padL) / heatGeom.cw), yi = Math.floor((e.clientY - r.top - heatGeom.padT) / heatGeom.ch);
+      if (xi < 0 || yi < 0 || xi >= HX.length || yi >= HY.length) { tipEl.hidden = true; return; }
+      const c = heatData[yi * HX.length + xi];
+      const d1 = document.createElement('div'); d1.appendChild(txt('b', pct(c.v))); d1.appendChild(txt('span', ' margem operacional', 'muted'));
+      showTip(e.clientX, e.clientY, [d1, txt('div', `Preço ×${nf(2).format(HX[xi])} · Volume ×${nf(2).format(HY[yi])}`), txt('div', `IA: ${eur(c.ai)} /mês · ${pct(c.pct)} da receita`, 'muted')]);
+    });
+    heatCv.addEventListener('pointerleave', () => tipEl.hidden = true);
+
+    /* ---------- render ---------- */
+    let lastR = null;
+    function render() {
+      saveState();
+      const R = simulate(P, P.scen); lastR = R;
+      const all = {}; SCEN_KEYS.forEach(k => all[k] = simulate(P, k));
+      const last = MONTHS - 1;
+      const st = statusOf(P, R.pct[last], R.gm[last], R.ebit[last]);
+
+      // fatura
+      document.getElementById('heroVal').textContent = eur(R.used[last]);
+      document.getElementById('heroSub').textContent = `vs. ${eur(R.used[0])} em nov/26 (×${nf(1).format(R.used[last] / R.used[0])}) · ${pct(R.pct[last])} da receita`;
+      document.getElementById('heroChip').replaceChildren(chip(st));
+      const kp = [
+        ['Custo acumulado nov/26–dez/28', eur(R.cum), P.selfOn && R.avoided[last] > 0 ? `Só API: ${eur(R.cumApi)}` : 'Toda a carga em API'],
+        ['Tokens por dia · dez/28', tok(R.tokTot[last]), `hoje ${tok(R.tokTot[0])} · agentes ${pct(R.tokAg[last] / R.tokTot[last], 0)}`],
+        ['Preço médio de API · dez/28', nf(2).format(R.apiPerM[last]) + ' €/M', `hoje ${nf(2).format(R.apiPerM[0])} €/M tokens`],
+        ['Margem bruta · dez/28', pct(R.gm[last]), `mínimo definido ${P.gmFloor}%`],
+        ['Margem operacional · dez/28', pct(R.ebit[last]), `hoje ${pct(R.ebit[0])}`],
+        ['Custo por execução de agente', eur(R.costRun[last]), `hoje ${eur(R.costRun[0])} · receita ${eur(P.revRun)}`],
+      ];
+      const kpis = document.getElementById('kpis'); kpis.replaceChildren();
+      kp.forEach(([k, v, d]) => { const e = document.createElement('div'); e.className = 'kv'; e.append(txt('span', k, 'k'), txt('span', v, 'v'), txt('span', d, 'd')); kpis.appendChild(e); });
+
+      // rupturas
+      const bp = breakpoints(P, R);
+      const headroom = (R.rev[last] * (1 - P.cogs / 100 - P.opex / 100)) / R.used[last] - 1;
+      const items = [
+        ['Alerta: IA > ' + P.alertPct + '% da receita', monthTxt(bp.alert), bp.alert < 0 ? 'ok' : 'warn', bp.alert < 0 ? 'Dentro do limiar até dez/28' : `${pct(R.pct[bp.alert])} da receita nesse mês`],
+        ['Ruptura de margem bruta (< ' + P.gmFloor + '%)', monthTxt(bp.gm), bp.gm < 0 ? 'ok' : 'serious', bp.gm < 0 ? 'Acima do mínimo até dez/28' : `Margem bruta ${pct(R.gm[bp.gm])}`],
+        ['Ruptura operacional (margem < 0)', monthTxt(bp.ebit), bp.ebit < 0 ? 'ok' : 'crit', bp.ebit < 0 ? 'Operação lucrativa até dez/28' : `Prejuízo de ${pct(-R.ebit[bp.ebit])} da receita`],
+        ['Orçamento de ' + eur(P.budget * 1000, 0) + '/mês excedido', monthTxt(bp.budget), bp.budget < 0 ? 'ok' : 'warn', bp.budget < 0 ? 'Dentro do orçamento até dez/28' : `Fatura nesse mês: ${eur(R.used[bp.budget])}`],
+        ['Folga de preço em dez/28', headroom >= 0 ? ('+' + pct(headroom, 0)) : 'Sem folga', headroom >= 0.5 ? 'ok' : headroom >= 0 ? 'warn' : 'crit', headroom >= 0 ? 'Subida de preço suportada antes de prejuízo' : `Os preços teriam de cair ${pct(-headroom / (1 + headroom), 0)} para voltar ao lucro`],
+        ['Economia unitária do agente', R.costRun[last] <= P.revRun ? 'Rentável' : 'Deficitária', R.costRun[last] <= P.revRun ? 'ok' : 'serious', `Custo ${eur(R.costRun[last])} vs. receita ${eur(P.revRun)} por execução (dez/28)`],
+        ['Cruzamento API → Blackwell próprio', P.selfOn ? monthTxt(bp.cross) : 'Desligado', !P.selfOn ? 'ok' : (bp.cross < 0 ? 'warn' : 'ok'), P.selfOn ? `${nf(0).format(R.gpus[last])} GPUs em dez/28 · ${nf(0).format(R.co2[last])} tCO₂e/mês · ${nf(3).format(R.selfPerM[last])} €/M tok eq` : 'Ligue a estratégia híbrida nos pressupostos'],
+      ];
+      const bEl = document.getElementById('breaks'); bEl.replaceChildren();
+      items.forEach(([t, v, s, d]) => { const e = document.createElement('div'); e.className = 'bk ' + s; e.append(txt('span', t, 't'), txt('span', v, 'v'), txt('span', d, 'd')); bEl.appendChild(e); });
+
+      // matriz de cenários
+      const mt = document.getElementById('matrix'); mt.replaceChildren();
+      const hr = document.createElement('tr');['Cenário', 'Alerta', 'Ruptura de margem', 'Ruptura operacional', 'Fatura dez/28', 'Acumulado', 'IA/receita dez/28'].forEach(h => hr.appendChild(txt('th', h)));
+      const th = document.createElement('thead'); th.appendChild(hr); mt.appendChild(th);
+      const tb = document.createElement('tbody');
+      SCEN_KEYS.forEach(k => {
+        const Rk = all[k], b = breakpoints(P, Rk); const tr = document.createElement('tr');
+        const td0 = document.createElement('td'); const key = document.createElement('span'); key.style.cssText = `display:inline-block;width:14px;height:3px;border-radius:2px;margin-right:8px;vertical-align:middle;background:var(${SCEN_META[k].color})`; td0.append(key, document.createTextNode(SCEN_META[k].name)); td0.style.fontFamily = 'var(--f-body)'; if (k === P.scen) td0.style.fontWeight = '700';
+        tr.append(td0, txt('td', b.alert < 0 ? '–' : mLabel(b.alert)), txt('td', b.gm < 0 ? '–' : mLabel(b.gm)), txt('td', b.ebit < 0 ? '–' : mLabel(b.ebit)), txt('td', eur(Rk.used[last])), txt('td', eur(Rk.cum)), txt('td', pct(Rk.pct[last])));
+        tb.appendChild(tr);
+      });
+      mt.appendChild(tb);
+
+      // gráficos
+      if (window.Chart && charts.cost) {
+        const c = charts.cost.data.datasets;
+        c[0].data = P.selfOn ? R.hybrid : R.api.map(() => null); c[0].hidden = !P.selfOn;
+        c[1].data = R.apiN; c[2].data = R.apiL; c[3].data = R.apiA; charts.cost.update('none');
+
+        const p = charts.pct.data.datasets;
+        SCEN_KEYS.forEach((k, i) => p[i].data = all[k].pct);
+        p[4].data = R.t.map(() => P.alertPct / 100);
+        p[5].data = R.t.map(() => 1 - P.cogs / 100 - P.gmFloor / 100);
+        p[6].data = R.t.map(() => 1 - P.cogs / 100 - P.opex / 100);
+        charts.pct.update('none');
+
+        charts.tok.data.datasets[0].data = R.tokInt.map(v => v / 1e9);
+        charts.tok.data.datasets[1].data = R.tokAg.map(v => v / 1e9);
+        charts.tok.update('none');
+
+        SCEN_KEYS.forEach((k, i) => charts.idx.data.datasets[i].data = all[k].idx.map(v => v * 100));
+        charts.idx.update('none');
+
+        const sd = charts.self.data.datasets;
+        sd[0].data = R.api; sd[1].data = P.selfOn ? R.hybrid : R.api.map(() => null); sd[2].data = R.rev.map(v => v * P.alertPct / 100);
+        charts.self.update('none');
+
+        const td = tornado(+document.getElementById('tornDelta').value);
+        charts.torn.data.labels = td.rows.map(r => r.lab);
+        charts.torn.data.datasets[0].data = td.rows.map(r => r.lo < 0 ? [r.lo, 0] : [0, r.lo]);
+        charts.torn.data.datasets[1].data = td.rows.map(r => r.hi < 0 ? [r.hi, 0] : [0, r.hi]);
+        charts.torn.update('none');
+      }
+      document.getElementById('selfDesc').textContent = P.selfOn
+        ? `Migração de ${P.elig}% do tráfego (limitada à quota não-frontier) para ${GPU_PRESETS[P.gpu].name} em ${P.selfMode === 'buy' ? 'compra' : 'aluguer'}. Cruzamento: ${monthTxt(bp.cross)}.`
+        : 'Estratégia híbrida desligada: ligue-a em Infraestrutura própria para comparar.';
+      drawHeat();
+      renderTable(R);
+    }
+    function chip(s) { const e = document.createElement('span'); e.className = 'chip ' + s; e.append(document.createElement('i'), document.createTextNode(STATUS_TXT[s])); return e; }
+
+    function renderTable(R) {
+      const cols = ['Mês', 'Tokens/dia', 'Índice preço', 'Custo API', 'Poupança híbrida', 'Custo IA usado', 'Receita', 'IA/receita', 'Margem bruta', 'Margem oper.', 'GPUs', 'Estado'];
+      const t = document.getElementById('tbl'); t.replaceChildren();
+      const th = document.createElement('thead'), hr = document.createElement('tr'); cols.forEach(c => hr.appendChild(txt('th', c))); th.appendChild(hr); t.appendChild(th);
+      const tb = document.createElement('tbody');
+      R.t.forEach(i => {
+        const tr = document.createElement('tr'); if (R.label[i].startsWith('jan')) tr.className = 'yr';
+        const s = statusOf(P, R.pct[i], R.gm[i], R.ebit[i]);
+        tr.append(txt('td', R.label[i]), txt('td', tok(R.tokTot[i])), txt('td', nf(0).format(R.idx[i] * 100)), txt('td', eur(R.api[i])),
+          txt('td', R.avoided[i] > 0 ? eur(R.api[i] - R.hybrid[i]) : '–'), txt('td', eur(R.used[i])), txt('td', eur(R.rev[i])),
+          txt('td', pct(R.pct[i])), txt('td', pct(R.gm[i])), txt('td', pct(R.ebit[i])), txt('td', R.gpus[i] ? nf(0).format(R.gpus[i]) : '–'));
+        const tdS = document.createElement('td'); tdS.appendChild(chip(s)); tr.appendChild(tdS);
+        tb.appendChild(tr);
+      });
+      t.appendChild(tb);
+    }
+
+    document.getElementById('copyBtn').addEventListener('click', async () => {
+      const R = lastR; if (!R) return;
+      const lines = [['Mês', 'Tokens/dia', 'Índice preço', 'Custo API €', 'Custo IA usado €', 'Receita €', 'IA/receita', 'Margem bruta', 'Margem operacional', 'GPUs'].join('\t')];
+      R.t.forEach(i => lines.push([R.label[i], Math.round(R.tokTot[i]), (R.idx[i] * 100).toFixed(1), Math.round(R.api[i]), Math.round(R.used[i]), Math.round(R.rev[i]), (R.pct[i] * 100).toFixed(2) + '%', (R.gm[i] * 100).toFixed(2) + '%', (R.ebit[i] * 100).toFixed(2) + '%', R.gpus[i]].join('\t')));
+      const btn = document.getElementById('copyBtn');
+      try { await navigator.clipboard.writeText(lines.join('\n')); btn.textContent = 'Tabela copiada'; }
+      catch (e) { const r = document.createRange(); r.selectNodeContents(document.getElementById('tbl')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); btn.textContent = 'Selecionada: Ctrl+C'; }
+      setTimeout(() => btn.textContent = 'Copiar tabela', 2200);
+    });
+    document.getElementById('resetBtn').addEventListener('click', () => { P = clone(DEFAULTS); syncControls(); schedule(); });
+    document.getElementById('tornDelta').addEventListener('change', schedule);
+    (function () { const s = document.getElementById('heatMonth'); for (let t = 0; t < MONTHS; t++) { const o = document.createElement('option'); o.value = t; o.textContent = mLabel(t); s.appendChild(o); } s.value = MONTHS - 1; s.addEventListener('change', drawHeat); })();
+
+    let timer = null;
+    function schedule() { clearTimeout(timer); timer = setTimeout(render, 60); }
+    window.addEventListener('resize', () => { clearTimeout(window.__rz); window.__rz = setTimeout(drawHeat, 120); });
+    function rethem() { buildCharts(); render(); }
+    try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', rethem); } catch (e) { }
+    new MutationObserver(rethem).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+    buildScenSeg(); buildControls(); syncControls(); buildCharts(); render();
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { buildCharts(); render(); });
+  </script>
+
+</body>
+
+</html>
