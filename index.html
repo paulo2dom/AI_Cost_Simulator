@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Simulador de Custo de IA 2028</title>
   <meta name="description" content="Guia e acesso ao Simulador de Custo de IA 2028: projeção mensal do custo de modelos de linguagem de uma empresa de software até dezembro de 2028.">
+  <meta name="author" content="Paulo Domingues">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="stylesheet"
     href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
@@ -280,6 +281,31 @@
     .msg {
       color: var(--muted)
     }
+
+    .doc .byline {
+      margin: -8px 0 20px;
+      font-size: 14px;
+      color: var(--muted)
+    }
+
+    .doc .byline a,
+    .foot a {
+      color: var(--accent);
+      font-weight: 600;
+      text-decoration: none
+    }
+
+    .doc .byline a:hover,
+    .foot a:hover {
+      text-decoration: underline
+    }
+
+    .foot {
+      margin-top: 28px;
+      text-align: center;
+      font-size: 13px;
+      color: var(--muted)
+    }
   </style>
 </head>
 <body>
@@ -297,12 +323,17 @@
     <div class="end">
       <a class="cta" href="Site/Simulador%20de%20custos%20de%20IA%202028.html">Abrir simulador</a>
     </div>
+    <footer class="foot">
+      Projeto de <a href="https://www.linkedin.com/in/paulo-d-043971143/" target="_blank" rel="noopener">Paulo Domingues</a>
+      · <a href="https://github.com/paulo2dom/AI_Cost_Simulator" target="_blank" rel="noopener">Código no GitHub</a>
+    </footer>
   </main>
 
   <script>
     // O guia é o README.md do repositório, para haver uma só fonte de texto.
     const SIM = "Site/Simulador%20de%20custos%20de%20IA%202028.html";
     const REPO_README = "https://github.com/paulo2dom/AI_Cost_Simulator#readme";
+    const AUTHOR_URL = "https://www.linkedin.com/in/paulo-d-043971143/";
     const doc = document.getElementById("doc");
 
     function slug(s) {
@@ -314,6 +345,15 @@
       .then(r => { if (!r.ok) throw new Error(r.status); return r.text(); })
       .then(md => {
         doc.innerHTML = marked.parse(md);
+
+        // Autor logo abaixo do título.
+        const h1 = doc.querySelector("h1");
+        if (h1) {
+          const by = document.createElement("p");
+          by.className = "byline";
+          by.innerHTML = 'Por <a href="' + AUTHOR_URL + '">Paulo Domingues</a>';
+          h1.after(by);
+        }
 
         // Tabelas largas fazem scroll horizontal dentro do cartão, não na página.
         doc.querySelectorAll("table").forEach(t => {
