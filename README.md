@@ -1,6 +1,6 @@
 # Simulador de Custo de IA 2028
 
-![Vista geral do simulador](docs/screenshot.png)
+![Vista geral do simulador](Site/Image/Simulator_Screen.png)
 
 ## O que é
 
