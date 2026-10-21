@@ -1,10 +1,10 @@
-# Simulador de Fatura de IA 2028
+# Simulador de Custo de IA 2028
 
 ![Vista geral do simulador](docs/screenshot.png)
 
 ## O que é
 
-O Simulador de Fatura de IA 2028 é uma ferramenta interativa que projeta, mês a mês, o custo de modelos de linguagem (LLM) de uma empresa de software entre **novembro de 2026 e dezembro de 2028**.
+O Simulador de Custo de IA 2028 é uma ferramenta interativa que projeta, mês a mês, o custo de modelos de linguagem (LLM) de uma empresa de software entre **novembro de 2026 e dezembro de 2028**.
 
 Junta numa só página as variáveis que mais vão pesar nas faturas de IA nos próximos dois anos:
 
