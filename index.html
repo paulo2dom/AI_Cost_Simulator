@@ -4,11 +4,347 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Simulador de Custo de IA 2028</title>
-  <meta http-equiv="refresh" content="0; url=Site/Simulador%20de%20custos%20de%20IA%202028.html">
-  <link rel="canonical" href="Site/Simulador%20de%20custos%20de%20IA%202028.html">
-  <script>location.replace("Site/Simulador%20de%20custos%20de%20IA%202028.html" + location.search + location.hash);</script>
+  <meta name="description" content="Guia e acesso ao Simulador de Custo de IA 2028: projeção mensal do custo de modelos de linguagem de uma empresa de software até dezembro de 2028.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+  <style>
+    /* Guia: mostra o README.md do repositório, com acesso direto ao simulador. Paleta igual à do simulador. */
+    :root {
+      --bg: #f3f4f7;
+      --surface: #ffffff;
+      --surface-2: #eceef3;
+      --ink: #12151c;
+      --ink-2: #4a5061;
+      --muted: #6c7283;
+      --line: #dde0e8;
+      --accent: #33388f;
+      --accent-ink: #ffffff;
+      --accent-soft: #e6e7f6;
+      --f-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+      --f-body: "Archivo", "Helvetica Neue", Arial, sans-serif;
+      --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+      --r: 10px;
+      color-scheme: light;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #111318;
+        --surface: #1a1d24;
+        --surface-2: #232731;
+        --ink: #eef0f5;
+        --ink-2: #c0c5d2;
+        --muted: #9097a8;
+        --line: #2d313c;
+        --accent: #9aa0f0;
+        --accent-ink: #12142e;
+        --accent-soft: #262a4a;
+        color-scheme: dark;
+      }
+    }
+
+    :root[data-theme="dark"] {
+      --bg: #111318;
+      --surface: #1a1d24;
+      --surface-2: #232731;
+      --ink: #eef0f5;
+      --ink-2: #c0c5d2;
+      --muted: #9097a8;
+      --line: #2d313c;
+      --accent: #9aa0f0;
+      --accent-ink: #12142e;
+      --accent-soft: #262a4a;
+      color-scheme: dark;
+    }
+
+    * {
+      box-sizing: border-box
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: var(--f-body);
+      font-size: 15px;
+      line-height: 1.6
+    }
+
+    /* barra de topo */
+    .bar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: var(--surface);
+      border-bottom: 1px solid var(--line);
+      padding: 10px max(16px, env(safe-area-inset-left, 0px))
+    }
+
+    .bar-in {
+      max-width: 880px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px
+    }
+
+    .brand {
+      font-family: var(--f-display);
+      font-weight: 700;
+      font-stretch: 92%;
+      color: var(--ink);
+      text-decoration: none;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis
+    }
+
+    .cta {
+      flex: none;
+      display: inline-block;
+      font: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      background: var(--accent);
+      color: var(--accent-ink);
+      padding: 8px 14px;
+      border-radius: 8px;
+      text-decoration: none
+    }
+
+    .cta:hover {
+      filter: brightness(1.1)
+    }
+
+    .cta:focus-visible,
+    a:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px
+    }
+
+    /* conteúdo */
+    main {
+      max-width: 880px;
+      margin: 0 auto;
+      padding: 28px 16px 64px
+    }
+
+    .doc {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--r);
+      padding: clamp(18px, 4vw, 40px)
+    }
+
+    .doc h1,
+    .doc h2,
+    .doc h3 {
+      font-family: var(--f-display);
+      line-height: 1.25;
+      text-wrap: balance;
+      scroll-margin-top: 72px
+    }
+
+    .doc h1 {
+      font-size: clamp(26px, 4vw, 34px);
+      font-weight: 750;
+      font-stretch: 88%;
+      letter-spacing: -.01em;
+      margin: 0 0 16px
+    }
+
+    .doc h2 {
+      font-size: 22px;
+      font-weight: 700;
+      font-stretch: 92%;
+      margin: 40px 0 12px;
+      padding-top: 20px;
+      border-top: 1px solid var(--line)
+    }
+
+    .doc h3 {
+      font-size: 17px;
+      font-weight: 650;
+      margin: 28px 0 8px
+    }
+
+    .doc p,
+    .doc ul,
+    .doc ol {
+      color: var(--ink-2);
+      margin: 0 0 14px
+    }
+
+    .doc li {
+      margin: 4px 0
+    }
+
+    .doc strong {
+      color: var(--ink)
+    }
+
+    .doc a {
+      color: var(--accent)
+    }
+
+    .doc img {
+      display: block;
+      max-width: 100%;
+      height: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px
+    }
+
+    .shot {
+      display: block;
+      margin: 0 0 8px
+    }
+
+    .shot-note {
+      font-size: 13px;
+      color: var(--muted);
+      margin: 0 0 24px
+    }
+
+    .doc blockquote {
+      margin: 0 0 16px;
+      padding: 10px 16px;
+      background: var(--accent-soft);
+      border-left: 3px solid var(--accent);
+      border-radius: 0 8px 8px 0
+    }
+
+    .doc blockquote p {
+      margin: 0;
+      color: var(--ink)
+    }
+
+    .doc code {
+      font-family: var(--f-mono);
+      font-size: .88em;
+      background: var(--surface-2);
+      padding: 1px 5px;
+      border-radius: 4px
+    }
+
+    .doc pre {
+      background: var(--surface-2);
+      border-radius: 8px;
+      padding: 14px 16px;
+      overflow-x: auto;
+      margin: 0 0 16px
+    }
+
+    .doc pre code {
+      background: none;
+      padding: 0;
+      font-size: 13px
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      margin: 0 0 18px
+    }
+
+    .doc table {
+      border-collapse: collapse;
+      width: 100%;
+      font-size: 14px
+    }
+
+    .doc th,
+    .doc td {
+      border-bottom: 1px solid var(--line);
+      padding: 7px 10px;
+      vertical-align: top
+    }
+
+    .doc th {
+      text-align: left;
+      font-weight: 650;
+      background: var(--surface-2)
+    }
+
+    .doc td {
+      color: var(--ink-2)
+    }
+
+    .end {
+      margin-top: 32px;
+      text-align: center
+    }
+
+    .msg {
+      color: var(--muted)
+    }
+  </style>
 </head>
 <body>
-  <p>A abrir o simulador… Se não abrir automaticamente, <a href="Site/Simulador%20de%20custos%20de%20IA%202028.html">clique aqui</a>.</p>
+  <header class="bar">
+    <div class="bar-in">
+      <a class="brand" href="#">Simulador de Custo de IA 2028</a>
+      <a class="cta" href="Site/Simulador%20de%20custos%20de%20IA%202028.html">Abrir simulador</a>
+    </div>
+  </header>
+
+  <main>
+    <article class="doc" id="doc">
+      <p class="msg">A carregar o guia…</p>
+    </article>
+    <div class="end">
+      <a class="cta" href="Site/Simulador%20de%20custos%20de%20IA%202028.html">Abrir simulador</a>
+    </div>
+  </main>
+
+  <script>
+    // O guia é o README.md do repositório, para haver uma só fonte de texto.
+    const SIM = "Site/Simulador%20de%20custos%20de%20IA%202028.html";
+    const REPO_README = "https://github.com/paulo2dom/AI_Cost_Simulator#readme";
+    const doc = document.getElementById("doc");
+
+    function slug(s) {
+      return s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "")
+        .replace(/[^\w\s-]/g, "").trim().replace(/\s+/g, "-");
+    }
+
+    fetch("README.md", { cache: "no-cache" })
+      .then(r => { if (!r.ok) throw new Error(r.status); return r.text(); })
+      .then(md => {
+        doc.innerHTML = marked.parse(md);
+
+        // Tabelas largas fazem scroll horizontal dentro do cartão, não na página.
+        doc.querySelectorAll("table").forEach(t => {
+          const w = document.createElement("div");
+          w.className = "table-wrap";
+          t.replaceWith(w);
+          w.appendChild(t);
+        });
+
+        // A captura de ecrã abre o simulador.
+        const img = doc.querySelector("img");
+        if (img) {
+          const host = img.closest("p") || img;
+          const a = document.createElement("a");
+          a.className = "shot";
+          a.href = SIM;
+          a.appendChild(img);
+          const note = document.createElement("p");
+          note.className = "shot-note";
+          note.textContent = "Clique na imagem para abrir o simulador.";
+          host.replaceWith(a, note);
+        }
+
+        // Links externos abrem num separador novo; títulos ganham âncoras.
+        doc.querySelectorAll('a[href^="http"]').forEach(a => { a.target = "_blank"; a.rel = "noopener"; });
+        doc.querySelectorAll("h2, h3").forEach(h => { h.id = slug(h.textContent); });
+        if (location.hash) document.getElementById(decodeURIComponent(location.hash.slice(1)))?.scrollIntoView();
+      })
+      .catch(() => {
+        doc.innerHTML = '<p class="msg">Não foi possível carregar o guia aqui. Pode lê-lo no <a href="' + REPO_README + '">GitHub</a>.</p>';
+      });
+  </script>
 </body>
 </html>
