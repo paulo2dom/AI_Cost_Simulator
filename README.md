@@ -17,26 +17,37 @@ Com estes dados, o simulador mostra quando e porquê a despesa com IA deixa de s
 
 ## Propósito
 
-Nos últimos anos o preço por token caiu de forma contínua, e muitas empresas fizeram orçamentos a contar com isso. Há três razões para esse pressuposto já não ser seguro:
+Este simulador partilha uma **base de cálculo aberta** sobre o custo da IA generativa numa empresa de software. Serve para fazer simulações com diferentes valores e testar hipóteses. O objetivo é ajudar cada pessoa que o use a pensar no tema e a construir a sua própria opinião crítica sobre a evolução destes custos.
 
-1. **O volume cresce mais depressa do que o preço desce.** Um agente que executa 30 passos reenvia o contexto acumulado em cada passo, por isso consome centenas de vezes mais tokens do que um pedido de chat. O custo por tarefa pode subir mesmo com o preço por token a descer.
-2. **Os preços atuais podem estar subsidiados.** Os laboratórios frontier operam com prejuízo ou margens apertadas. Ao entrarem em bolsa, os investidores vão exigir margem, o que pode travar ou inverter a descida de preços.
-3. **A energia passou a ser um fator de capacidade.** Défice de ligação à rede, prazos de vários anos para transformadores e subidas da eletricidade junto dos grandes centros de dados acabam por chegar ao preço da nuvem.
+> **Os valores calculados destinam-se a investigação, não a orçamentos.** Não devem ser usados diretamente como previsão ou orçamento, mas a lógica de cálculo e os pressupostos podem apoiar quem esteja a preparar um.
 
-O simulador serve para:
+Na prática, o simulador permite:
 
-- **Orçamentar** a despesa de IA com cenários explícitos, em vez de uma única extrapolação.
-- **Identificar pontos de ruptura**, ou seja, o mês em que o custo de IA leva a margem bruta ou operacional abaixo do aceitável.
-- **Priorizar alavancas.** A análise de sensibilidade mostra que pressupostos mais mexem na fatura (cache, passos por agente, preço, mix de modelos) e, portanto, onde a otimização compensa mais.
-- **Avaliar comprar contra alugar contra usar API**, isto é, se e quando compensa servir modelos abertos em infraestrutura própria.
-- **Fundamentar decisões perante a gestão** com números rastreáveis e pressupostos visíveis.
+- **Perceber a mecânica do custo**, ou seja, como o preço por token, o volume, a cache, os agentes e o contexto longo se combinam numa fatura.
+- **Testar hipóteses sobre o futuro**, como uma descida contínua de preços, uma subida depois dos IPOs dos laboratórios frontier ou um choque energético, e comparar o efeito de cada uma.
+- **Questionar os próprios pressupostos.** A análise de sensibilidade mostra quais pesam mais no resultado e, portanto, quais merecem ser validados com dados reais.
+- **Explorar limites**, isto é, em que condições o custo de IA começa a pôr em causa a margem de uma empresa de software.
+- **Comparar abordagens** (API, aluguer ou compra de GPUs), vendo os custos e as limitações de cada uma.
+
+Todos os pressupostos e fórmulas estão expostos neste guia e no código, para que possam ser verificados, contestados e melhorados.
+
+### Questões em aberto
+
+Três questões motivaram este simulador. Nenhuma tem resposta certa, e é para as explorar que os cenários existem:
+
+1. **O volume vai crescer mais depressa do que o preço desce?** Um agente que executa 30 passos reenvia o contexto acumulado em cada passo, por isso pode consumir centenas de vezes mais tokens do que um pedido de chat. Assim, o custo por tarefa pode subir mesmo que o preço por token continue a descer.
+2. **Os preços atuais são sustentáveis?** Há indicações de que os laboratórios frontier operam com prejuízo ou margens apertadas. A entrada em bolsa pode trazer pressão para subir margens, ou a concorrência pode continuar a empurrar os preços para baixo.
+3. **Quanto da restrição energética chega ao preço?** O défice de ligação à rede, os prazos longos para equipamento elétrico e a subida da eletricidade junto dos grandes centros de dados podem refletir-se no preço da nuvem, com intensidade incerta.
 
 ### Para quem
 
-- Direção financeira e de controlo de gestão de empresas de software ou com produtos digitais.
-- Responsáveis de produto e de engenharia que decidem a arquitetura de agentes, o mix de modelos e o uso de contexto longo.
-- Equipas de infraestrutura e FinOps que avaliam GPUs próprias ou reservadas.
-- Equipas de governação de IA e de sustentabilidade, que querem ligar a despesa de IA ao consumo de energia e às emissões.
+Para qualquer pessoa que queira explorar o tema com números, por exemplo:
+
+- quem acompanha a área financeira ou de controlo de gestão e quer perceber a ordem de grandeza destes custos;
+- responsáveis de produto e de engenharia que pensam em arquiteturas de agentes, mix de modelos e uso de contexto longo;
+- equipas de infraestrutura e FinOps que querem comparar API, aluguer e GPUs próprias;
+- equipas de governação de IA e de sustentabilidade interessadas na relação entre IA, energia e emissões;
+- estudantes, investigadores e curiosos que queiram pôr à prova as suas próprias hipóteses.
 
 ## Como funciona
 
@@ -263,7 +274,7 @@ Estes números ilustram a mecânica do modelo para uma empresa fictícia. Não s
 - O custo de infraestrutura própria usa, em cada mês, o hardware e o preço desse mês. Não modela uma frota comprada numa data e que depois envelhece, nem prazos de entrega.
 - O mapa preço × volume e a sensibilidade mantêm a receita constante. Na prática, parte do aumento de custo pode ser repassada ao cliente.
 - Não inclui taxas de escrita em cache, limites de pedidos (*rate limits*), compromissos de volume nem descontos negociados.
-- Os cenários são hipóteses exploratórias, não previsões, e o simulador não constitui aconselhamento financeiro.
+- Os cenários são hipóteses exploratórias, não previsões. Os resultados servem para investigação e reflexão, não para serem usados diretamente como orçamento, e o simulador não constitui aconselhamento financeiro.
 
 ## Utilização prática
 
@@ -282,4 +293,3 @@ Valores consultados em outubro de 2026:
 - Preços de compra de B200/B300, DGX e NVL72: [Tech Insider](https://tech-insider.org/nvidia-blackwell-gpu-pricing/)
 - Subsídio de preços e pressão pré-IPO: [Axios](https://www.axios.com/2026/03/12/ai-models-costs-ipo-pricing), [CNBC](https://www.cnbc.com/2026/05/20/cheap-ai-could-derail-openai-and-anthropics-ipos.html)
 - Restrições energéticas, PUE e défice de rede: [Tech Insider](https://tech-insider.org/ai-data-center-power-crisis-2026/), [CNBC / Goldman Sachs](https://www.cnbc.com/2026/02/12/electricity-price-data-center-ai-inflation-goldman.html)
-
