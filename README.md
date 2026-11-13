@@ -1,7 +1,5 @@
 # Simulador de Custo de IA 2028
 
-### Acesso ao simulador: https://paulo2dom.github.io/AI_Cost_Simulator/
-
 ![Vista geral do simulador](Site/Image/Simulator_Screen.png)
 
 ## O que é
